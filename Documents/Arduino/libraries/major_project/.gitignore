@@ -11,3 +11,9 @@ secrets.yml
 .vscode/
 .idea/
 *.log
+
+# Ignore python virtual environment folder
+python_ahrs/venv/
+
+
+Application Data/
