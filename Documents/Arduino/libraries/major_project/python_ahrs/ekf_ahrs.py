@@ -46,6 +46,7 @@ acc_cov = np.mean(np.diagonal(np.cov(acc[0:calib_data_length, :], rowvar=False))
 # finding covariance of magnetometer data up to calibration data length
 mag_cov = np.mean(np.diagonal(np.cov(mag[0:calib_data_length, :], rowvar=False)))
 
+print(gyr_cov,acc_cov,mag_cov)
 
 # finding mean of magnetometer data up to calibration data length
 mag_mean = np.mean(mag[0:calib_data_length, :], axis=0)
@@ -58,7 +59,7 @@ acc_mean = np.mean(acc[0:calib_data_length, :], axis=0)
 q0 = acc2q(acc_mean)
 
 # Run EKF algorithm
-#ekf = EKF(gyr=gyr, acc=acc, mag=mag, frequency=250.0, magnetic_ref = mag_mean, q0 = q0, noises=(gyr_cov, acc_cov, mag_cov))
+ekf = EKF(gyr=gyr, acc=acc, mag=mag, frequency=250.0, magnetic_ref = mag_mean, q0 = q0, noises=[0.09, 0.0001, 0.015])
 
 
 """
@@ -88,12 +89,12 @@ class Game(ShowBase):
         # Set up the initial rotation
         initial_quat = Quat()
       
-        """
+        
         initial_quat.setW(ekf.Q[0, 0])
         initial_quat.setX(-ekf.Q[0, 3])
         initial_quat.setY(-ekf.Q[0, 1])
         initial_quat.setZ(ekf.Q[0, 2])
-        """
+        
         """
         initial_quat.setW(1/np.sqrt(2))
         initial_quat.setX(0)
@@ -102,11 +103,12 @@ class Game(ShowBase):
         """
 
         #madgwick quaternion visualize
-        initial_quat.setW(madgwick[0, 0])
-        initial_quat.setX(-madgwick[0, 3])
-        initial_quat.setY(-madgwick[0, 1])
-        initial_quat.setZ(madgwick[0, 2])
-
+        """
+        initial_quat.setW(madgwick[len(madgwick)-1, 0])
+        initial_quat.setX(-madgwick[len(madgwick)-1, 3])
+        initial_quat.setY(-madgwick[len(madgwick)-1, 1])
+        initial_quat.setZ(madgwick[len(madgwick)-1, 2])
+        """
 
         self.model.setQuat(initial_quat)
 
@@ -117,12 +119,14 @@ class Game(ShowBase):
 
     def rotate_model_task(self, task):
         
+        
         self.i = self.i + self.gap
         int_i = int(self.i)
-        #if(int_i<len(ekf.Q)): 
-        if(int_i<len(madgwick)):
+        
+        if(int_i<len(ekf.Q)): 
+        #if(int_i<len(madgwick)):
             quat = Quat()
-            """
+            
             quat.setW(ekf.Q[int_i, 0])
             quat.setX(-ekf.Q[int_i, 3])
             quat.setY(-ekf.Q[int_i, 1])
@@ -133,7 +137,7 @@ class Game(ShowBase):
             quat.setX(-madgwick[int_i, 3])
             quat.setY(-madgwick[int_i, 1])
             quat.setZ(madgwick[int_i, 2])
-
+            """
 
             self.model.setQuat(quat)
         
