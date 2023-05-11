@@ -14,6 +14,8 @@ secrets.yml
 
 # Ignore python virtual environment folder
 python_ahrs/venv/
+Eigen/
+books/
 
 
 Application Data/
