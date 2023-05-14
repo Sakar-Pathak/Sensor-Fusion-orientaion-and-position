@@ -19,16 +19,16 @@ const float magn_ellipsoid_center[3] = {33.0393, 27.8563, -6.24899};
 const float magn_ellipsoid_transform[3][3] = {{0.843576, -0.0375454, -0.0320949}, {-0.0375454, 0.838998, 0.0437144}, {-0.0320949, 0.0437144, 0.97602}};
 
 
-const double g[3] = {0, 0, 1};
+const double g[3] = {0, 0, -1};
 //const float r[3] = {0, 0, 0};
-const float Ts = 0.01;
+const float Ts = 0.004;
 const double P[4] = {1,1,1,1}; //uncertainty of quaternion
 //const float q[4] = {1,0,0,0}; //initial quaternion
 
 // Covariance matrices
-const double Q[3] = {0.0001, 0.0001, 0.0001};  // covariance for gyro
+const double Q[3] = {0.0000006459498903751044, 0.0000006459498903751044, 0.0000006459498903751044};  // covariance for gyro
 
-const double R[6] = {0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001};  // covariance for accel and mag
+const double R[6] = {0.0000011620665443494157, 0.0000011620665443494157, 0.0000011620665443494157, 0.00017709437975418487, 0.00017709437975418487, 0.00017709437975418487};  // covariance for accel and mag
 
 
 //extern double accel[3];  // Actually stores the NEGATED acceleration (equals gravity, if board not moving).
