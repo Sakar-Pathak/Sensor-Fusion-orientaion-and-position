@@ -1,10 +1,14 @@
 #include "ahrs_ekf.h"
 
-AHRS_EKF::AHRS_EKF(Eigen::Matrix<double, 4, 4> &P_in, Eigen::Matrix<double, 4, 4> &Q_in, Eigen::Matrix<double, 6, 6> &R_in, Eigen::Vector<double, 3> &g_in, Eigen::Vector<double, 3> &r_in, Eigen::Vector<double, 4> &q_in, float &_t)
-: Q(Q_in), R(R_in), g(g_in), r(r_in), _t(_t)
+AHRS_EKF::AHRS_EKF(Eigen::Matrix<double, 3, 3> &Q_in, Eigen::Matrix<double, 6, 6> &R_in, Eigen::Vector<double, 3> &g_in, Eigen::Vector<double, 3> &r_in, float &Fs, Eigen::Matrix<double, 4, 4> &P_in, Eigen::Vector<double, 4> &q_in)
+: Q(Q_in), R(R_in), g(g_in), r(r_in), _t(1/Fs)
 {
     P = P_in;
     q = q_in;
+}
+
+AHRS_EKF::~AHRS_EKF()
+{
 }
 
 Eigen::Matrix<double, 4, 4> AHRS_EKF::omega_func(Eigen::Vector<double, 3> &w)
@@ -31,9 +35,9 @@ Eigen::Vector<double, 4> AHRS_EKF::f_func(Eigen::Matrix<double, 4, 4> &F)
     return q_;
 }
 
-Eigen::Matrix<double, 3, 4> AHRS_EKF::W_func()
+Eigen::Matrix<double, 4, 3> AHRS_EKF::W_func()
 {
-    Eigen::Matrix<double, 3, 4> W;
+    Eigen::Matrix<double, 4, 3> W;
     W << -q[1], -q[2], -q[3],
         q[0], -q[3], q[2],
         q[3], q[0], -q[1],
@@ -96,7 +100,7 @@ Eigen::Vector<double, 4> AHRS_EKF::update(Eigen::Vector<double, 3> &a, Eigen::Ve
     Eigen::MatrixXd(4,4);
     Eigen::Matrix<double, 4, 4> F = F_func(w);
     Eigen::Vector<double, 4> q_ = f_func(F);
-    Eigen::Matrix<double, 3, 4> W = W_func();
+    Eigen::Matrix<double, 4, 3> W = W_func();
     Eigen::MatrixXd P_ = F * P * F.transpose() + W * Q * W.transpose();
 
     // correct
