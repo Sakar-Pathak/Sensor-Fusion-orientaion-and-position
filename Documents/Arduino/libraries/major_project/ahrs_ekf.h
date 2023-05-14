@@ -12,30 +12,27 @@
 
 #endif
 
+// initial quaternion from acceleration and magnetic field
+double* init_quaternion(double (&a_in)[3], double (&m_in)[3]);
+
 class AHRS_EKF
 {
 public:
-    AHRS_EKF(Eigen::Matrix<double, 3, 3> &Q_in, Eigen::Matrix<double, 6, 6> &R_in, Eigen::Vector<double, 3> &g_in, Eigen::Vector<double, 3> &r_in, float &Fs, Eigen::Matrix<double, 4, 4> &P_in, Eigen::Vector<double, 4> &q_in);
+    AHRS_EKF();
     ~AHRS_EKF();
 
-    // initial quaternion from acceleration and magnetic field
-    Eigen::Vector<double, 4> init_quaternion(Eigen::Vector<double, 3> &a, Eigen::Vector<double, 3> &m);
+    void init(const double (&Q_in)[3], const double (&R_in)[6], const double (&g_in)[3], const double(&r_in)[3], const float &Ts, const double (&P_in)[4], const double (&q_in)[4]);
 
-    Eigen::Vector<double, 4> update(Eigen::Vector<double, 3> &a, Eigen::Vector<double, 3> &m, Eigen::Vector<double, 3> &w);
+    double* update(double (&a_in)[3], double (&m_in)[3], double (&w_in)[3]);
 
 private:
-    const Eigen::Matrix<double, 3, 3> Q;  // process noise covariance matrix
-
-    const Eigen::Matrix<double, 6, 6> R;  // measurement noise covariance matrix
-
-    const Eigen::Vector<double, 3> g; // gravity vector
-
-    const Eigen::Vector<double, 3> r; // magnetic field vector
-
-    const float _t; // time interval
-
+    Eigen::Matrix<double, 3, 3> Q;  // process noise covariance m
+    Eigen::Matrix<double, 6, 6> R;  // measurement noise covariance m
+    Eigen::Vector<double, 3> g; // gravity v
+    Eigen::Vector<double, 3> r; // magnetic field v
+    float _t; // time interval
+    
     Eigen::Vector<double, 4> q; // quaternion at time t-1
-
     Eigen::Matrix<double, 4, 4> P; // state covariance matrix at time t-1
 
 

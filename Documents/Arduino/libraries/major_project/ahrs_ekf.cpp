@@ -1,14 +1,66 @@
 #include "ahrs_ekf.h"
 
-AHRS_EKF::AHRS_EKF(Eigen::Matrix<double, 3, 3> &Q_in, Eigen::Matrix<double, 6, 6> &R_in, Eigen::Vector<double, 3> &g_in, Eigen::Vector<double, 3> &r_in, float &Fs, Eigen::Matrix<double, 4, 4> &P_in, Eigen::Vector<double, 4> &q_in)
-: Q(Q_in), R(R_in), g(g_in), r(r_in), _t(1/Fs)
-{
-    P = P_in;
-    q = q_in;
+// initial quaternion from acceleration and magnetic field
+double* init_quaternion(double (&a_in)[3], double (&m_in)[3])
+{   
+    Eigen::Vector<double, 3> a = Eigen::Vector<double, 3>(a_in);
+    Eigen::Vector<double, 3> m = Eigen::Vector<double, 3>(m_in);
+    Eigen::Vector<double, 3> v1 = a.cross(m);
+    Eigen::Vector<double, 3> v2 = a.cross(v1);
+    v1 = v1 / v1.norm();
+    v2 = v2 / v2.norm();
+    Eigen::Matrix<double, 3, 3> R;
+    R << a[0], v1[0], v2[0],
+        a[1], v1[1], v2[1],
+        a[2], v1[2], v2[2];
+        
+    Eigen::Quaterniond q_(R);
+    Eigen::Vector<double, 4> q;
+    q << q_.w(), q_.x(), q_.y(), q_.z();
+
+    // normalize
+    q = q / q.norm();
+
+    // Eigen::vector to array
+    static double q_out[4];
+    q_out[0] = q[0];
+    q_out[1] = q[1];
+    q_out[2] = q[2];
+    q_out[3] = q[3];
+
+    return q_out;
 }
 
-AHRS_EKF::~AHRS_EKF()
+
+AHRS_EKF::AHRS_EKF() {}
+
+AHRS_EKF::~AHRS_EKF() {}
+
+void AHRS_EKF::init(const double (&Q_in)[3], const double (&R_in)[6], const double (&g_in)[3], const double(&r_in)[3], const float &Ts, const double (&P_in)[4], const double (&q_in)[4])
 {
+    Q<< Q_in[0], 0, 0,
+        0, Q_in[1], 0,
+        0, 0, Q_in[2];
+    
+    R << R_in[0], 0, 0, 0, 0, 0,
+        0, R_in[1], 0, 0, 0, 0,
+        0, 0, R_in[2], 0, 0, 0,
+        0, 0, 0, R_in[3], 0, 0,
+        0, 0, 0, 0, R_in[4], 0,
+        0, 0, 0, 0, 0, R_in[5];
+
+    g << g_in[0], g_in[1], g_in[2];
+
+    r << r_in[0], r_in[1], r_in[2];
+
+    _t = Ts;
+
+    P << P_in[0], 0, 0, 0,
+        0, P_in[1], 0, 0,
+        0, 0, P_in[2], 0,
+        0, 0, 0, P_in[3];
+    
+    q << q_in[0], q_in[1], q_in[2], q_in[3];
 }
 
 Eigen::Matrix<double, 4, 4> AHRS_EKF::omega_func(Eigen::Vector<double, 3> &w)
@@ -77,25 +129,12 @@ Eigen::Matrix<double, 6, 4> AHRS_EKF::H_func(Eigen::Vector<double, 4> &q)
     return 2 * H;
 }
 
-// initial quaternion from acceleration and magnetic field
-Eigen::Vector<double, 4> AHRS_EKF::init_quaternion(Eigen::Vector<double, 3> &a, Eigen::Vector<double, 3> &m)
+double* AHRS_EKF::update(double (&a_in)[3], double (&m_in)[3], double (&w_in)[3])
 {
-    Eigen::Vector<double, 3> v1 = a.cross(m);
-    Eigen::Vector<double, 3> v2 = a.cross(v1);
-    v1 = v1 / v1.norm();
-    v2 = v2 / v2.norm();
-    Eigen::Matrix<double, 3, 3> R;
-    R << a[0], v1[0], v2[0],
-        a[1], v1[1], v2[1],
-        a[2], v1[2], v2[2];
-        
-    Eigen::Quaterniond q_(R);
-    q << q_.w(), q_.x(), q_.y(), q_.z();
-    return q;
-}
+    Eigen::Vector<double, 3> a = Eigen::Vector<double, 3>(a_in);
+    Eigen::Vector<double, 3> m = Eigen::Vector<double, 3>(m_in);
+    Eigen::Vector<double, 3> w = Eigen::Vector<double, 3>(w_in);
 
-Eigen::Vector<double, 4> AHRS_EKF::update(Eigen::Vector<double, 3> &a, Eigen::Vector<double, 3> &m, Eigen::Vector<double, 3> &w)
-{
     // predict
     Eigen::MatrixXd(4,4);
     Eigen::Matrix<double, 4, 4> F = F_func(w);
@@ -117,5 +156,16 @@ Eigen::Vector<double, 4> AHRS_EKF::update(Eigen::Vector<double, 3> &a, Eigen::Ve
     // update
     q = q_;
     P = P_;
-    return q;
+
+    // normalize
+    q = q / q.norm();
+
+    // Eigen::vector to array
+    static double q_out[4];
+    q_out[0] = q[0];
+    q_out[1] = q[1];
+    q_out[2] = q[2];
+    q_out[3] = q[3];
+
+    return q_out;
 }
