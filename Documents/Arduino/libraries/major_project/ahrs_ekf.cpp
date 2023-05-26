@@ -1,4 +1,5 @@
 #include "ahrs_ekf.h"
+#include "Arduino.h"
 
 // initial quaternion from acceleration and magnetic field
 double* init_quaternion(double (&a_in)[3], double (&m_in)[3])
@@ -14,7 +15,7 @@ double* init_quaternion(double (&a_in)[3], double (&m_in)[3])
         a[1], v1[1], v2[1],
         a[2], v1[2], v2[2];
         
-    Eigen::Quaterniond q_(R);
+    Eigen::Quaterniond q_(R.transpose());
     Eigen::Vector<double, 4> q;
     q << q_.w(), q_.x(), q_.y(), q_.z();
 
@@ -131,6 +132,8 @@ Eigen::Matrix<double, 6, 4> AHRS_EKF::H_func(Eigen::Vector<double, 4> &q)
 
 double* AHRS_EKF::update(double (&a_in)[3], double (&m_in)[3], double (&w_in)[3])
 {
+
+
     Eigen::Vector<double, 3> a = Eigen::Vector<double, 3>(a_in);
     Eigen::Vector<double, 3> m = Eigen::Vector<double, 3>(m_in);
     Eigen::Vector<double, 3> w = Eigen::Vector<double, 3>(w_in);
@@ -156,6 +159,7 @@ double* AHRS_EKF::update(double (&a_in)[3], double (&m_in)[3], double (&w_in)[3]
     // update
     q = q_;
     P = P_;
+
 
     // normalize
     q = q / q.norm();
