@@ -109,14 +109,12 @@ void ahrs_setup()
     accel_avg[j] /= 100;
     magnetom_avg[j] /= 100;
   }
-
-  double r[3] = {magnetom_avg[0], magnetom_avg[1], magnetom_avg[2]};
   
   // initial quaternion from acceleration and magnetic field
-  q = init_quaternion(accel, magnetom);
+  q = init_quaternion(accel_avg, magnetom_avg);
 
-  //const double q_temp[4] = {q[0], q[1], q[2], q[3]};
-  const double q_temp[4] = {1, 0, 0, 0};
+  const double q_temp[4] = {q[0], q[1], q[2], q[3]};
+  //const double q_temp[4] = {1, 0, 0, 0};
   ahrs_ekf.init(Q, R, g, r, Ts, P, q_temp);
 }
 

@@ -4,6 +4,8 @@
 
 
 
+
+
 #define GRAVITY 9.802 // The gravity acceleration in New York City
 
 // Calibration outcomes
@@ -20,7 +22,12 @@ const float magn_ellipsoid_transform[3][3] = {{0.843576, -0.0375454, -0.0320949}
 
 
 const double g[3] = {0, 0, -1};
-//const float r[3] = {0, 0, 0};
+// magnetic inclination angle symbol = delta, magnetic declination symbol = gamma
+const double theta = 56.5919*PI/180.0;
+const double beta = -4.1934*PI/180.0;
+const double r[3] = {cos(theta) * cos(beta), cos(theta) * sin(beta), sin(theta)};
+
+
 const float Ts = 0.004;
 const double P[4] = {0.0,0.0,0.0,0.0}; //uncertainty of quaternion
 //const double P[4] = {0.1,0.1,0.1,0.1}; //uncertainty of quaternion
