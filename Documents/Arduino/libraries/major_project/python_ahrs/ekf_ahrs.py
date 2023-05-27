@@ -51,8 +51,8 @@ class Game(ShowBase):
         
         initial_quat.setW(w)
         initial_quat.setX(z)
-        initial_quat.setY(-y)
-        initial_quat.setZ(-x)
+        initial_quat.setY(x)
+        initial_quat.setZ(-y)
 
         self.model.setQuat(initial_quat)
 
@@ -80,8 +80,8 @@ class Game(ShowBase):
         
                 quat.setW(w)
                 quat.setX(z)
-                quat.setY(-y)
-                quat.setZ(-x)
+                quat.setY(x)
+                quat.setZ(-y)
 
                 self.model.setQuat(quat)
             
