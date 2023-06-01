@@ -25,6 +25,8 @@ public:
 
     double* update(double (&a_in)[3], double (&m_in)[3], double (&w_in)[3]);
 
+    Eigen::Matrix<double, 4, 4> P; // state covariance matrix at time t-1
+
 private:
     Eigen::Matrix<double, 3, 3> Q;  // process noise covariance m
     Eigen::Matrix<double, 6, 6> R;  // measurement noise covariance m
@@ -33,14 +35,12 @@ private:
     float _t; // time interval
     
     Eigen::Vector<double, 4> q; // quaternion at time t-1
-    Eigen::Matrix<double, 4, 4> P; // state covariance matrix at time t-1
-
 
     Eigen::Matrix<double, 4, 4> omega_func(Eigen::Vector<double, 3> &w);
 
     Eigen::Matrix<double, 4, 4> F_func(Eigen::Vector<double, 3> &w);
 
-    Eigen::Vector<double, 4> f_func(Eigen::Matrix<double, 4, 4> &F);
+    void f_func(Eigen::Matrix<double, 4, 4> &F);
 
     Eigen::Matrix<double, 4, 3> W_func();
 

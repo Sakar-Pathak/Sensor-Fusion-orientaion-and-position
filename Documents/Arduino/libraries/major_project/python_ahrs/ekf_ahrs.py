@@ -1,7 +1,8 @@
 import numpy as np
 from ahrs.filters import EKF
 from ahrs.common.orientation import acc2q
-#import matplotlib.pyplot as plt
+
+
 
 from panda3d.core import loadPrcFile    #to load .prc file
 loadPrcFile("config\config.prc")        #it contains configurational settings
@@ -14,6 +15,7 @@ import serial
 
 print("\n\n\n\n")
 
+
 class Game(ShowBase):
     def __init__(self):
         ShowBase.__init__(self)
@@ -25,23 +27,26 @@ class Game(ShowBase):
 
         self.taskMgr.add(self.rotate_model_task, "rotate_model_task")
 
-        self.ser = serial.Serial('COM5', 2000000, timeout=1)
+        self.ser = serial.Serial('COM10', 2000000, timeout=1)
         self.ser.flushInput()
         line = self.ser.readline().decode().rstrip()  # decode bytes to string and remove trailing newline
         columns = line.split(",")  # split line into columns using comma as delimiter
         
+
         # wait until we get a valid line
-        while len(columns) != 4:
+        while len(columns) != 8:
             self.ser.flushInput()
             line = self.ser.readline().decode().rstrip()
             columns = line.split(",")
 
-        if len(columns) == 4:  # make sure there are three columns
+        if len(columns) == 8:  # make sure there are three columns
             try:
-                w = float(columns[0])
-                x = float(columns[1])
-                y = float(columns[2])
-                z = float(columns[3])
+                qw = float(columns[1])
+                qx = float(columns[2])
+                qy = float(columns[3])
+                qz = float(columns[4])
+
+
             
             except:
                 print("Invalid line: " + line)
@@ -49,10 +54,10 @@ class Game(ShowBase):
         # Set up the initial rotation
         initial_quat = Quat()
         
-        initial_quat.setW(w)
-        initial_quat.setX(z)
-        initial_quat.setY(x)
-        initial_quat.setZ(-y)
+        initial_quat.setW(qw)
+        initial_quat.setX(qz)
+        initial_quat.setY(qx)
+        initial_quat.setZ(-qy)
 
         self.model.setQuat(initial_quat)
 
@@ -62,26 +67,28 @@ class Game(ShowBase):
         line = self.ser.readline().decode().rstrip()  # decode bytes to string and remove trailing newline
         columns = line.split(",")  # split line into columns using comma as delimiter
         
+        global N, E, D
+
         # wait until we get a valid line
-        while len(columns) != 4:
+        while len(columns) != 8:
             self.ser.flushInput()
             line = self.ser.readline().decode().rstrip()
             columns = line.split(",")
 
 
-        if len(columns) == 4:  # make sure there are three columns
+        if len(columns) == 8:  # make sure there are three columns
             try:
-                w = float(columns[0])
-                x = float(columns[1])
-                y = float(columns[2])
-                z = float(columns[3])
+                qw = float(columns[1])
+                qx = float(columns[2])
+                qy = float(columns[3])
+                qz = float(columns[4])
 
                 quat = Quat()
         
-                quat.setW(w)
-                quat.setX(z)
-                quat.setY(x)
-                quat.setZ(-y)
+                quat.setW(qw)
+                quat.setX(qz)
+                quat.setY(qx)
+                quat.setZ(-qy)
 
                 self.model.setQuat(quat)
             
@@ -93,5 +100,3 @@ class Game(ShowBase):
 
 game = Game()
 game.run()
-
-print("\n\n\n\n")

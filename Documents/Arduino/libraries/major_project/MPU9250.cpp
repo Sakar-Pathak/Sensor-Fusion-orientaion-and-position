@@ -462,6 +462,7 @@ int MPU9250::readSensor() {
   _hy = (((float)(_hycounts) * _magScaleY) - _hyb)*_hys;
   _hz = (((float)(_hzcounts) * _magScaleZ) - _hzb)*_hzs;
   _t = ((((float) _tcounts) - _tempOffset)/_tempScale) + _tempOffset;
+  
   return 1;
 }
 

@@ -5,6 +5,11 @@ double* init_quaternion(double (&a_in)[3], double (&m_in)[3])
 {   
     Eigen::Vector<double, 3> a = Eigen::Vector<double, 3>(a_in);
     Eigen::Vector<double, 3> m = Eigen::Vector<double, 3>(m_in);
+
+    // normalize
+    a = a / a.norm();
+    m = m / m.norm();
+
     Eigen::Vector<double, 3> v1 = m.cross(a);
     Eigen::Vector<double, 3> v2 = a.cross(v1);
     v1 = v1 / v1.norm();
@@ -80,11 +85,9 @@ Eigen::Matrix<double, 4, 4> AHRS_EKF::F_func(Eigen::Vector<double, 3> &w)
     return F;
 }
 
-Eigen::Vector<double, 4> AHRS_EKF::f_func(Eigen::Matrix<double, 4, 4> &F)
+void AHRS_EKF::f_func(Eigen::Matrix<double, 4, 4> &F)
 {
-    Eigen::Vector<double, 4> q_;
-    q_ = F * q;
-    return q_;
+    q = F * q;
 }
 
 Eigen::Matrix<double, 4, 3> AHRS_EKF::W_func()
@@ -137,27 +140,27 @@ double* AHRS_EKF::update(double (&a_in)[3], double (&m_in)[3], double (&w_in)[3]
     Eigen::Vector<double, 3> m = Eigen::Vector<double, 3>(m_in);
     Eigen::Vector<double, 3> w = Eigen::Vector<double, 3>(w_in);
 
-    // predict
-    Eigen::MatrixXd(4,4);
-    Eigen::Matrix<double, 4, 4> F = F_func(w);
-    Eigen::Vector<double, 4> q_ = f_func(F);
-    Eigen::Matrix<double, 4, 3> W = W_func();
-    Eigen::MatrixXd P_ = F * P * F.transpose() + W * Q * W.transpose();
+    // normalize
+    a = a / a.norm();
+    m = m / m.norm();
 
-    // correct
-    Eigen::Vector<double, 6> a_m_ = h_func(q_);
-    Eigen::Matrix<double, 6, 4> H = H_func(q_);
-    Eigen::Matrix<double, 6, 6> S = H * P_ * H.transpose() + R;
-    Eigen::Matrix<double, 4, 6> K = P_ * H.transpose() * S.inverse();
+
+    // predict
+    Eigen::Matrix<double, 4, 4> F = F_func(w);
+    f_func(F);
+    Eigen::Matrix<double, 4, 3> W = W_func();
+    P = F * P * F.transpose() + W * Q * W.transpose();
+
+    // correct and update
+    Eigen::Vector<double, 6> a_m_ = h_func(q);
+    Eigen::Matrix<double, 6, 4> H = H_func(q);
+    Eigen::Matrix<double, 6, 6> S = H * P * H.transpose() + R;
+    Eigen::Matrix<double, 4, 6> K = P * H.transpose() * S.inverse();
     Eigen::Vector<double, 6> z;
     z << a, m;
-    q_ = q_ + K * (z - a_m_);
+    q = q + K * (z - a_m_);
     Eigen::Matrix<double, 4, 4> I = Eigen::Matrix<double, 4, 4>::Identity(4, 4);
-    P_ = (I - K * H) * P_;
-
-    // update
-    q = q_;
-    P = P_;
+    P = (I - K * H) * P;
 
 
     // normalize
