@@ -11,7 +11,7 @@ ax = fig.add_subplot(111, projection='3d')
 ax.set_xlim(-2, 2)
 ax.set_ylim(-2, 2)
 ax.set_zlim(-2, 2)
-line, = ax.plot([], [], [], 'bo-')  # Modify the marker and line style as desired
+line, = ax.plot([], [], [], 'b-')  # Modify the marker and line style as desired
 # define numpy arrays x, y, z which will append the values of N, E, D respectively
 
 x = np.array([])

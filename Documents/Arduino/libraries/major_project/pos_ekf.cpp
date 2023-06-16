@@ -1,15 +1,13 @@
 #include "pos_ekf.h"
+#include "Arduino.h"
 
-POS_EKF::POS_EKF()
-{
-}
+Eigen::Vector<double, 3> z_ned;
 
-POS_EKF::~POS_EKF()
+Eigen::Vector<double, 3> lla2ecef(Eigen::Vector<double, 3> &lla)
 {
-}
-
-Eigen::Vector<double, 3> POS_EKF::lla2ecef(Eigen::Vector<double, 3> &lla)
-{
+    const double a = 6378137.0;     // equatorial radius of earth
+    const double e2 = 0.00669437999014; // square of first eccentricity
+    
     Eigen::Vector<double, 3> ecef;
 
     double N = a / sqrt(1 - e2 * sin(lla[0]) * sin(lla[0]));
@@ -21,7 +19,7 @@ Eigen::Vector<double, 3> POS_EKF::lla2ecef(Eigen::Vector<double, 3> &lla)
     return ecef;
 }
 
-Eigen::Vector<double, 3> POS_EKF::lla2ned(Eigen::Vector<double, 3> &ref_lla, Eigen::Vector<double, 3> &lla)
+Eigen::Vector<double, 3> lla2ned(Eigen::Vector<double, 3> &ref_lla, Eigen::Vector<double, 3> &lla)
 {
     Eigen::Vector<double, 3> ref_ecef = lla2ecef(ref_lla);
     Eigen::Vector<double, 3> ecef = lla2ecef(lla);
@@ -37,6 +35,14 @@ Eigen::Vector<double, 3> POS_EKF::lla2ned(Eigen::Vector<double, 3> &ref_lla, Eig
     ned[2] = -cos(ref_lla[0]) * cos(ref_lla[1]) * dX - cos(ref_lla[0]) * sin(ref_lla[1]) * dY - sin(ref_lla[0]) * dZ;
 
     return ned;
+}
+
+POS_EKF::POS_EKF()
+{
+}
+
+POS_EKF::~POS_EKF()
+{
 }
 
 void POS_EKF::init(const double (&Q_in)[7], const double (&R_in)[6], const double (&g_in)[3], const double (&pos_ref_lla_in)[3], const float &Ts, const double (&P_in)[9], const double (&x_in)[9])
@@ -85,9 +91,11 @@ void POS_EKF::init(const double (&Q_in)[7], const double (&R_in)[6], const doubl
     H << 0, 0, 0, 1, 0, 0, 0, 0, 0,
         0, 0, 0, 0, 1, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 1, 0, 0, 0,
-        1, 0, 0, 0, 0, 0, 1, 0, 0,
-        0, 1, 0, 0, 0, 0, 0, 1, 0,
-        0, 0, 1, 0, 0, 0, 0, 0, 1;
+        0, 0, 0, 0, 0, 0, 1, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 1, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 1;
+
+    x << x_in[0], x_in[1], x_in[2], x_in[3], x_in[4], x_in[5], x_in[6], x_in[7], x_in[8];
 }
 
 void POS_EKF::f_func(Eigen::Vector<double, 7> &u)
@@ -95,9 +103,26 @@ void POS_EKF::f_func(Eigen::Vector<double, 7> &u)
     x[0] = u[4]*(1-2*u[2]*u[2]-2*u[3]*u[3]) + u[5]*(2*u[1]*u[2]-2*u[0]*u[3]) + u[6]*(2*u[1]*u[3]+2*u[0]*u[2])-g[0];
     x[1] = u[4]*(2*u[1]*u[2]+2*u[0]*u[3]) + u[5]*(1-2*u[1]*u[1]-2*u[3]*u[3]) + u[6]*(2*u[2]*u[3]-2*u[0]*u[1])-g[1];
     x[2] = u[4]*(2*u[1]*u[3]-2*u[0]*u[2]) + u[5]*(2*u[2]*u[3]+2*u[0]*u[1]) + u[6]*(1-2*u[1]*u[1]-2*u[2]*u[2])-g[2];
+
+
+
+// serial print x
+
     x[3] = x[3] + x[0]*_t;
     x[4] = x[4] + x[1]*_t;
     x[5] = x[5] + x[2]*_t;
+    /*
+
+    // filter small bias from accel NED
+    for (int i = 0; i < 3; i++)
+    {
+        if (abs(x[i]) < 0.1)
+        {
+            x[i] = 0;
+            x[i+3] = 0;
+        }
+    }
+    */
     x[6] = x[6] + x[3]*_t + 0.5*x[0]*_t*_t;
     x[7] = x[7] + x[4]*_t + 0.5*x[1]*_t*_t;
     x[8] = x[8] + x[5]*_t + 0.5*x[2]*_t*_t;
@@ -136,14 +161,16 @@ double* POS_EKF::update(double (&u_in)[7], Eigen::Matrix<double, 4, 4> &Q_q, uns
 
     // correct and update
     // run correction step if iTOW is different from the previous one
+    
     if (iTOW - iTOW_prev > 0)
-    {
+    {   
         Eigen::Vector<double, 6> y = Eigen::Vector<double, 6>(x.block<6, 1>(3, 0));    //h is the last 6 elements of x
         Eigen::Vector<double, 6> z = Eigen::Vector<double, 6>(z_in);
         //convert z to ned
         Eigen::Vector<double, 3> z_lla = z.block<3, 1>(3, 0);
-        Eigen::Vector<double, 3> z_ned = lla2ned(pos_ref_lla, z_lla);
-        z.block<3, 1>(0, 0) = z_ned;
+        //Eigen::Vector<double, 3> z_ned = lla2ned(pos_ref_lla, z_lla);
+        z_ned  = lla2ned(pos_ref_lla, z_lla);
+        z.block<3, 1>(3, 0) = z_ned;
 
         Eigen::Matrix<double, 6, 6> S = H * P * H.transpose() + R;
         Eigen::Matrix<double, 9, 6> K = P * H.transpose() * S.inverse();
@@ -153,5 +180,6 @@ double* POS_EKF::update(double (&u_in)[7], Eigen::Matrix<double, 4, 4> &Q_q, uns
 
         iTOW_prev = iTOW;
     }
+    
     return x.data();
 }
